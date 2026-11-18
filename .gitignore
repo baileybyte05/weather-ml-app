@@ -1,0 +1,11 @@
+
+# Local SSH credentials
+/.ssh/
+/.bash_history
+/.bash_logout
+/.cache/
+/.docker/
+/.gitconfig
+/.lesshst
+/.profile
+/.ssh/
