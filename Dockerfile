@@ -9,6 +9,7 @@ FROM python:3.9-slim
 
 # Run the app
 
+<<<<<<< HEAD
 FROM python:3.11-slim
 
 # Keep Python output visible in container logs and avoid writing .pyc files.
@@ -32,3 +33,5 @@ EXPOSE 5000
 
 # Start the Flask app with a production WSGI server.
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+=======
+>>>>>>> 43b3315ce40bee2ce5f27d5c4ba5758b2fe9ad9f
