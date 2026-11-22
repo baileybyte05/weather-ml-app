@@ -1,0 +1,10 @@
+- name: Deploy image from DockerHub to Kubernetes
+  hosts: localhost
+  user: ubuntu
+  become: no
+
+  tasks:
+    - name: Create deployment
+      shell:
+        cmd: kubectl create deployment kubernetes-bootcamp --image=baileybyte05/weather-ml-app:latest
+

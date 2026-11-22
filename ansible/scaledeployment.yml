@@ -1,0 +1,9 @@
+- name: Scale Kubernetes Deployment
+  hosts: localhost
+  user: ubuntu
+  become: no
+
+  tasks:
+    - name: 1. Scale to 4 Pods
+      shell:
+        cmd: kubectl scale deployments/kubernetes-bootcamp --replicas=4

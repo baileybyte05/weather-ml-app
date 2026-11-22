@@ -1,0 +1,23 @@
+- name: Install and start minikube
+  hosts: localhost
+  user: ubuntu
+  become: yes
+
+  tasks:
+
+  - name: 1. Download minikube
+    shell:
+      cmd: curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+
+  - name: 2. Make minikube executable
+    shell:
+      cmd: chmod +x minikube
+
+  - name: 3. Move minikube to /usr/local/bin/
+    shell:
+      cmd: sudo mv minikube /usr/local/bin/
+
+  - name: 4. Start minikube
+    become: no
+    shell:
+      cmd: minikube start

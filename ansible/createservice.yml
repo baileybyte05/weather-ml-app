@@ -1,0 +1,9 @@
+- name: Create Service for Kubernetes deployment
+  hosts: localhost
+  user: ubuntu
+  become: no
+
+  tasks:
+    - name: 1. Create Service
+      shell:
+        cmd: kubectl expose deployment/kubernetes-bootcamp --type="NodePort" --port 5000 --name node-port-service
