@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install Flask and project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python tests/unit_test.py
+
+      - name: Run integration tests
+        run: python tests/integration_test.py
+
+      - name: Run smoke tests
+        run: python tests/smoke_test.py
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image for container launch test
+        run: docker buildx build --load --tag baileybyte05/weather-ml-app:${{ github.sha }} .
+
+      - name: Launch container
+        run: docker run --detach --name weather-ml-app-ci baileybyte05/weather-ml-app:${{ github.sha }}
+
+      - name: Verify command runs inside the launched container
+        run: docker exec weather-ml-app-ci python -c "print('Container launched successfully')"
+
+      - name: Remove test container
+        if: always()
+        run: docker rm --force weather-ml-app-ci || true
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push image to Docker Hub
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push baileybyte05/weather-ml-app:${{ github.sha }}
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            docker tag baileybyte05/weather-ml-app:${{ github.sha }} baileybyte05/weather-ml-app:latest
+            docker push baileybyte05/weather-ml-app:latest
+          fi
