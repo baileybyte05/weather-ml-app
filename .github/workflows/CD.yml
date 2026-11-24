@@ -10,10 +10,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: weather-ml-minikube
+  cancel-in-progress: false
+
 jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - linux
+      - minikube
+
     steps:
       - name: Check out successful build revision
         uses: actions/checkout@v4
@@ -29,20 +37,36 @@ jobs:
         env:
           KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
-          if [ -z "$KUBE_CONFIG" ]; then
-            echo "KUBE_CONFIG secret is required for Kubernetes deployment" >&2
+          set -e
+
+          mkdir -p "$HOME/.kube"
+
+          if [ -n "$KUBE_CONFIG" ]; then
+            printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
+            chmod 600 "$HOME/.kube/config"
+          elif [ -f "$HOME/.kube/config" ]; then
+            echo "Using the existing Minikube kubeconfig"
+            chmod 600 "$HOME/.kube/config"
+          else
+            echo "No kubeconfig found and KUBE_CONFIG is not set" >&2
             exit 1
           fi
-          mkdir -p "$HOME/.kube"
-          printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
+
+          kubectl config use-context minikube
+          kubectl cluster-info
+          kubectl get nodes
 
       - name: Apply Kubernetes deployment and service
-        run: kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
+        run: |
+          set -e
+          kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
+          kubectl rollout status deployment/weather-ml-app --timeout=180s
 
-      - name: Roll out the tested image without taking existing pods offline
+      - name: Roll out the tested image
         env:
           IMAGE: baileybyte05/weather-ml-app:${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
-          kubectl set image deployment/weather-ml-app weather-ml-app="$IMAGE"
+          set -e
+          kubectl set image deployment/weather-ml-app \
+            weather-ml-app="$IMAGE"
           kubectl rollout status deployment/weather-ml-app --timeout=180s
