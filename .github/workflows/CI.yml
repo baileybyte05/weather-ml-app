@@ -30,12 +30,18 @@ jobs:
           python -m pip install -r requirements.txt
 
       - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: python tests/unit_test.py
 
       - name: Run integration tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: python tests/integration_test.py
 
       - name: Run smoke tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: python tests/smoke_test.py
 
       - name: Set up Docker Buildx
