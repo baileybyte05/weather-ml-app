@@ -5,7 +5,6 @@ on:
     workflows: ["CI"]
     types: [completed]
     branches: [main]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +15,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository)
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_repository.full_name == github.repository
     runs-on:
       - self-hosted
       - linux
@@ -26,7 +25,7 @@ jobs:
       - name: Check out successful build revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -60,11 +59,10 @@ jobs:
         run: |
           set -e
           kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
-          kubectl rollout status deployment/weather-ml-app --timeout=180s
 
       - name: Roll out the tested image
         env:
-          IMAGE: baileybyte05/weather-ml-app:${{ github.event.workflow_run.head_sha || github.sha }}
+          IMAGE: baileybyte05/weather-ml-app:${{ github.event.workflow_run.head_sha }}
         run: |
           set -e
           kubectl set image deployment/weather-ml-app \
