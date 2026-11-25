@@ -7,7 +7,7 @@ class TestModelAppIntegration(unittest.TestCase):
 	def setUp(self):
 		app.testing = True
 		self.client = app.test_client()
-		
+
 	def test_model_app_integration(self):
 		# Valid test input that should work with the trained model
 		form_data = {
@@ -23,13 +23,14 @@ class TestModelAppIntegration(unittest.TestCase):
 		}
 
 		response = self.client.post('/', data=form_data)
-	
+		self.assertEqual(response.status_code, 200)
+
 		# Complete below
 		# Ensure that the result page (response.data) should include a weather prediction
-		
-	
+		self.assertIn(b'The weather is:', response.data)
+
 		# Ensure that the result page should include a prediction time
-		
+		self.assertIn(b'Prediction time:', response.data)
 
 		html_text = response.data.decode('utf-8').lower()
 		valid_classes = [
@@ -37,9 +38,9 @@ class TestModelAppIntegration(unittest.TestCase):
 			'misty', 'rainy', 'smokey', 'thunderstorm'
 		]
 		found = any(weather in html_text for weather in valid_classes)
-		
+
 		# Ensure that classification is in valid classes, provide an error message if not.
-		
+		self.assertTrue(found, f"No valid weather class found in the result page. Page content: {html_text[:300]}")
 
 if __name__ == '__main__':
 	unittest.main()
