@@ -32,39 +32,61 @@ jobs:
         with:
           version: latest
 
-      - name: Configure Kubernetes access
-        env:
-          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+      - name: Install Minikube
         run: |
           set -e
 
-          mkdir -p "$HOME/.kube"
-
-          if [ -n "$KUBE_CONFIG" ]; then
-            printf '%s' "$KUBE_CONFIG" > "$HOME/.kube/config"
-            chmod 600 "$HOME/.kube/config"
-          elif [ -f "$HOME/.kube/config" ]; then
-            echo "Using the existing Minikube kubeconfig"
-            chmod 600 "$HOME/.kube/config"
-          else
-            echo "No kubeconfig found and KUBE_CONFIG is not set" >&2
-            exit 1
+          if ! command -v minikube >/dev/null 2>&1; then
+            curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+            sudo install minikube-linux-amd64 /usr/local/bin/minikube
+            rm minikube-linux-amd64
           fi
+
+          minikube version
+          docker version
+
+      - name: Start Minikube
+        run: |
+          set -e
+
+          if minikube status --profile minikube >/dev/null 2>&1; then
+            echo "Using the existing Minikube cluster"
+          else
+            echo "Starting Minikube"
+            minikube delete --profile minikube --all >/dev/null 2>&1 || true
+            minikube start --profile minikube --driver=docker
+          fi
+
+          minikube update-context --profile minikube
+          mkdir -p "$HOME/.kube"
+          minikube kubectl -- \
+            --kubeconfig="$HOME/.kube/config" config use-context minikube
+
+      - name: Configure and verify Kubernetes access
+        run: |
+          set -e
 
           kubectl config use-context minikube
           kubectl cluster-info
           kubectl get nodes
+          kubectl get namespaces
 
       - name: Apply Kubernetes deployment and service
         run: |
           set -e
-          kubectl apply -f k8s/deployment.yaml -f k8s/service.yaml
+          kubectl apply \
+            -f k8s/deployment.yaml \
+            -f k8s/service.yaml
 
       - name: Roll out the tested image
         env:
           IMAGE: baileybyte05/weather-ml-app:${{ github.event.workflow_run.head_sha }}
         run: |
           set -e
+
           kubectl set image deployment/weather-ml-app \
             weather-ml-app="$IMAGE"
-          kubectl rollout status deployment/weather-ml-app --timeout=180s
+
+          kubectl rollout status \
+            deployment/weather-ml-app \
+            --timeout=180s
