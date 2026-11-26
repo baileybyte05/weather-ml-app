@@ -6,7 +6,7 @@ from pathlib import Path
 
 app = Flask(__name__)
 
-weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rainy', 'smokey', 'thunderstorm']
+weather_classes = ['clear', 'cloudy', 'drizzly', 'foggy', 'hazey', 'misty', 'rain', 'smokey', 'thunderstorm']
 
 MODEL_PATH = Path(__file__).resolve().parent / 'model' / 'model.pkl'
 
