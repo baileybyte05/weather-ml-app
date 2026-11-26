@@ -48,7 +48,7 @@ class TestUnit(unittest.TestCase):
 		class_result, _ = classify_weather(test_input)
 		# Ensure that 'rainy' class is returned
 		self.assertIn(class_result, weather_classes)
-		self.assertEqual(class_result, 'rainy')
+		self.assertEqual(class_result, 'rain')
 
 	# Known model limitation: the provided model.pkl scores this input as 'cloudy'
 	# (60.6%) with 0% for 'foggy', even when the code is correct. It is kept as an
